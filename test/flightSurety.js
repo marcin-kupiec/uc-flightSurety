@@ -1,10 +1,10 @@
-
-var Test = require('../config/testConfig.js');
-var BigNumber = require('bignumber.js');
+const Test = require('../config/testConfig.js');
+const BigNumber = require('bignumber.js');
+const assert = require('assert');
 
 contract('Flight Surety Tests', async (accounts) => {
 
-  var config;
+  let config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
@@ -19,7 +19,6 @@ contract('Flight Surety Tests', async (accounts) => {
     // Get operating status
     let status = await config.flightSuretyData.isOperational.call();
     assert.equal(status, true, "Incorrect initial operating status value");
-
   });
 
   it(`(multiparty) can block access to setOperatingStatus() for non-Contract Owner account`, async function () {
