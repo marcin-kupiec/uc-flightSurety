@@ -1,5 +1,5 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-const mnemonic = 'parrot crew drama alpha coach organ chalk scale electric inside pepper quiz';
+const mnemonic = 'basket sell cliff ivory cover acid loan parrot vanish soup pass south';
 
 module.exports = {
   networks: {
