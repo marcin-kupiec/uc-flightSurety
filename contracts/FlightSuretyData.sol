@@ -281,27 +281,39 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
     */
-//    function creditInsurees(bytes32 flightKey, uint multiplier, address payee) external
-//    requireIsOperational
-//    requireIsCallerAuthorized
-//    {
-//        require(!isPassengerInsured(flightKey, payee),"Passenger is not insured for this flight");
-//        uint256 credit = multiplier.mul(flights[flightKey].premiums[payee]);
-//        flights[flightKey].premiums[payee] = 0;
-//        creditBalances[payee].add(credit);
-//    }
-    
+    function creditInsurees(bytes32 flightKey, uint multiplier, address passenger) external
+    requireIsOperational
+    requireIsCallerAuthorized
+    {
+        require(!isPassengerInsured(flightKey, passenger), "Passenger is not insured for this flight");
+        uint256 credit = multiplier.mul(passengers[passenger].boughtFlight[flightKey]);
+        passengers[passenger].boughtFlight[flightKey] = 0;
+        creditBalances[passenger].add(credit);
+    }
+
+    function getPassengerCreditBalance(address passenger) public view
+    requireIsOperational
+    requireIsCallerAuthorized
+    returns(uint256 balance)
+    {
+        return creditBalances[passenger];
+    }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay
-                            (
-                            )
-                            external
-                            pure
+    function pay(address passenger) external payable
+    requireIsOperational
+    requireIsCallerAuthorized
     {
+        // checks
+        require(creditBalances[passenger] > 0, "Passenger has no credit balance");
+        // effects
+        uint256 money = creditBalances[passenger];
+        creditBalances[passenger] = 0;
+        // interaction
+        passenger.transfer(money);
     }
 
    /**
@@ -309,7 +321,8 @@ contract FlightSuretyData {
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
     */   
-    function fund() public payable requireIsOperational
+    function fund() public payable
+    requireIsOperational
     {
         uint256 currentFunds = airlines[msg.sender].funded;
         airlines[msg.sender].funded = currentFunds.add(msg.value);

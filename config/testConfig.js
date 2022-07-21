@@ -35,7 +35,13 @@ const Config = async function(accounts) {
         weiMultiple: (new BigNumber(10)).pow(18),
         testAddresses: testAddresses,
         flightSuretyData: flightSuretyData,
-        flightSuretyApp: flightSuretyApp
+        flightSuretyApp: flightSuretyApp,
+        STATUS_CODE_UNKNOWN: new BigNumber(0),
+        STATUS_CODE_ON_TIME: new BigNumber(10),
+        STATUS_CODE_LATE_AIRLINE: new BigNumber(20),
+        STATUS_CODE_LATE_WEATHER: new BigNumber(30),
+        STATUS_CODE_LATE_TECHNICAL: new BigNumber(40),
+        STATUS_CODE_LATE_OTHER: new BigNumber(50)
     }
 }
 

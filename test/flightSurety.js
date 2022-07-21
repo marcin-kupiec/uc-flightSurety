@@ -114,13 +114,13 @@ contract('Flight Surety Tests', async (accounts) => {
     }
     catch(e) { console.log(e); }
 
-    let result = await config.flightSuretyData.isAirlineRegistered.call(accounts[4]);
+    let result = await config.flightSuretyApp.isAirlineRegistered.call(accounts[4]);
     let airlinesCount = await config.flightSuretyData.airlinesCount.call();
     assert.equal(result, false, 'Airline should wait to get votes');
     assert.equal(airlinesCount, 4, `Airlines count should be 4 - one waiting for votes: expected ${4} got ${airlinesCount}`);
 
-    await config.flightSuretyData.voteForAirline(accounts[4], 2);
-    result = await config.flightSuretyData.isAirlineRegistered.call(accounts[4]);
+    await config.flightSuretyApp.registerAirline('Udacity Airline 5', accounts[4], {from: config.owner});
+    result = await config.flightSuretyApp.isAirlineRegistered.call(accounts[4]);
     airlinesCount = await config.flightSuretyData.airlinesCount.call();
     assert.equal(result, true, 'Airline should be registered');
     assert.equal(airlinesCount, 5, 'Airlines count should be 5');
@@ -150,7 +150,55 @@ contract('Flight Surety Tests', async (accounts) => {
     }
     catch(e) { console.log(e); }
 
-    const registeredPassenger = await config.flightSuretyData.passengerAddresses.call(0);
-    assert.equal(registeredPassenger, config.firstPassenger, 'Passenger should be added to list of people who bought a ticket.');
+    const insuredPassenger = await config.flightSuretyApp.isPassengerInsured.call(accounts[2], 'CODE1', flightTimestamp, {from: config.firstPassenger});
+    assert.equal(insuredPassenger, true, 'Passenger should be insured.');
   });
+
+  it('(passenger) cannot register for the same flight twice', async () => {
+    const price = await config.flightSuretyData.INSURANCE_PRICE_LIMIT.call();
+    let error = false;
+
+    try {
+      await config.flightSuretyApp.InsureFlight(accounts[2], 'CODE1', flightTimestamp, {from: config.firstPassenger, value: price});
+    }
+    catch(e) {
+      error = true;
+    }
+
+    assert.equal(error, true, "passenger 1 should not be able to insure twice for the same flight");
+  });
+
+  xit('(passenger) if flight is late credit passenger', async () => {
+    let firstAirline = accounts[0];
+    let passenger1 = accounts[7];
+    let errorZeroBalance = false;
+
+    try {
+      await config.flightSuretyApp.withdrawCredits({from: config.firstPassenger});
+    }
+    catch(e){
+      errorZeroBalance = true;
+    }
+    assert.equal(errorZeroBalance, true, "Should not be able to withdraw money with no credit balance");
+
+    let firstPassengerBalance = await config.flightSuretyApp.getPassengerCreditBalance.call({from: config.firstPassenger});
+    assert.equal(firstPassengerBalance, 0, "passenger 1 should have no credit");
+
+    try {
+      await config.flightSuretyApp.processFlightStatus(accounts[2], 'CODE1', flightTimestamp, config.STATUS_CODE_LATE_AIRLINE);
+    }
+    catch(e){
+      console.log(e.message);
+    }
+
+    try {
+      await config.flightSuretyApp.withdrawCredits({from: passenger1});
+    }
+    catch(e){
+      console.log(e.message);
+    }
+    passenger1_balance = await config.flightSuretyApp.getPassengerCreditBalance.call({from: passenger1});
+    assert.equal(passenger1_balance, 0, "passenger should have 0 ether after calling pay");
+  });
+
 });

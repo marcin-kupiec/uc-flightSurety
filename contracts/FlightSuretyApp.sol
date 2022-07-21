@@ -102,6 +102,12 @@ contract FlightSuretyApp {
         return flightSuretyData.isAirlineRegistered(airline);
     }
 
+    function isPassengerInsured(address airline, string memory flight, uint256 timestamp) public view returns (bool)
+    {
+        bytes32 key = getFlightKey(airline, flight, timestamp);
+        return flightSuretyData.isPassengerInsured(key, msg.sender);
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -159,7 +165,7 @@ contract FlightSuretyApp {
         if(statusCode == STATUS_CODE_LATE_AIRLINE) {
             bytes32 key = getFlightKey(airline, code, timestamp);
             // credit the account of each of the recipients
-//            flightSuretyData.creditInsurees(key, premiumMultiplier, msg.sender);
+            flightSuretyData.creditInsurees(key, premiumMultiplier, msg.sender);
         }
     }
 
@@ -181,6 +187,12 @@ contract FlightSuretyApp {
     {
         bytes32 flightKey = getFlightKey(airline, code, timestamp);
         flightSuretyData.buy.value(msg.value)(flightKey, msg.sender);
+    }
+
+    function withdrawCredits() public
+    requireIsOperational
+    {
+        flightSuretyData.pay(msg.sender);
     }
 
 // region ORACLE MANAGEMENT
@@ -228,11 +240,7 @@ contract FlightSuretyApp {
 
 
     // Register an oracle with the contract
-    function registerOracle
-                            (
-                            )
-                            external
-                            payable
+    function registerOracle() external payable
     {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
@@ -240,17 +248,13 @@ contract FlightSuretyApp {
         uint8[3] memory indexes = generateIndexes(msg.sender);
 
         oracles[msg.sender] = Oracle({
-                                        isRegistered: true,
-                                        indexes: indexes
-                                    });
+            isRegistered: true,
+            indexes: indexes
+        });
     }
 
-    function getMyIndexes
-                            (
-                            )
-                            view
-                            external
-                            returns(uint8[3])
+    function getMyIndexes() view external
+    returns(uint8[3])
     {
         require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
