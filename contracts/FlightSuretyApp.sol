@@ -31,12 +31,13 @@ contract FlightSuretyApp {
 
     struct Flight {
         bool isRegistered;
+        string flightCode;
+        string destination;
         uint8 statusCode;
         uint256 updatedTimestamp;        
         address airline;
     }
     mapping(bytes32 => Flight) private flights;
-
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -99,7 +100,6 @@ contract FlightSuretyApp {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-  
    /**
     * @dev Add an airline to the registration queue
     *
@@ -113,15 +113,28 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     *
     */  
-    function registerFlight
-                                (
-                                )
-                                external
-                                pure
+    function registerFlight(string code, uint256 timestamp, string destination) external requireIsOperational
     {
+        bytes32 key = getFlightKey(msg.sender, code, timestamp);
+        require(!flights[key].isRegistered, "Flight is already registered.");
+        require(flightSuretyData.isAirlineRegistered(msg.sender), "Airline must be registered");
 
+        flights[key] = Flight({
+            isRegistered: true,
+            destination: destination,
+            flightCode: code,
+            statusCode: STATUS_CODE_UNKNOWN,
+            updatedTimestamp: timestamp,
+            airline: msg.sender
+        });
     }
-    
+
+    function IsFlightRegistered(string code, uint256 timestamp, address airline) external view requireIsOperational returns(bool)
+    {
+        bytes32 key = getFlightKey(airline, code, timestamp);
+        return flights[key].isRegistered;
+    }
+
    /**
     * @dev Called after oracle has updated flight status
     *
@@ -158,8 +171,15 @@ contract FlightSuretyApp {
                                             });
 
         emit OracleRequest(index, airline, flight, timestamp);
-    } 
+    }
 
+    function InsureFlight(address airline, string memory code, uint256 timestamp) public payable requireIsOperational
+    {
+        bytes32 flightKey = getFlightKey(airline, code, timestamp);
+        require(flights[flightKey].isRegistered, "Flight does not exist, or is not registered");
+
+        flightSuretyData.buy.value(msg.value)(flightKey, msg.sender);
+    }
 
 // region ORACLE MANAGEMENT
 

@@ -5,6 +5,8 @@ const assert = require('assert');
 contract('Flight Surety Tests', async (accounts) => {
 
   let config;
+  let flightTimestamp;
+
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address, { from: config.owner });
@@ -85,7 +87,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     // ASSERT
     assert.equal(airlinesCount, 2, `Airlines count should be 2.`);
-    assert.equal(result, true, "Airline should be able to register another airline directly if there are less than 4 registered");
+    assert.equal(result, true, 'Airline should be able to register another airline directly if there are less than 4 registered');
   });
 
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
@@ -121,6 +123,31 @@ contract('Flight Surety Tests', async (accounts) => {
     result = await config.flightSuretyData.isAirlineRegistered.call(accounts[4]);
     airlinesCount = await config.flightSuretyData.airlinesCount.call();
     assert.equal(result, true, 'Airline should be registered');
-    assert.equal(airlinesCount, 5, "Airlines count should be 5");
+    assert.equal(airlinesCount, 5, 'Airlines count should be 5');
+  });
+
+  it('(airline) can register a flight using registerFlight()', async () => {
+    flightTimestamp = Math.floor(Date.now() / 1000);
+
+    const flightCode = 'CODE1';
+    try {
+      await config.flightSuretyApp.registerFlight(flightCode, flightTimestamp, 'Cracow', {from: accounts[2]});
+    }
+    catch(e) { console.log(e); }
+
+    let isRegistered = await config.flightSuretyApp.IsFlightRegistered.call(flightCode, flightTimestamp, accounts[2]);
+    assert.equal(isRegistered, true, 'Flight should be registered');
+  });
+
+  it('(passenger) may pay up to 1 ether for purchasing flight insurance.', async () => {
+    const price = await config.flightSuretyData.INSURANCE_PRICE_LIMIT.call();
+
+    try {
+      await config.flightSuretyApp.InsureFlight(accounts[2], 'CODE1', flightTimestamp, {from: config.firstPassenger, value: price});
+    }
+    catch(e) { console.log(e); }
+
+    const registeredPassenger = await config.flightSuretyData.passengerAddresses.call(0);
+    assert.equal(registeredPassenger, config.firstPassenger, 'Passenger should be added to list of people who bought a ticket.');
   });
 });

@@ -9,6 +9,12 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
+    address private contractOwner;      // Account used to deploy contract
+    bool private operational = true;    // Blocks all state changes throughout the contract if false
+
+    mapping(address => uint256) private authorizedContracts;
+
+    // airlines info
     struct Airline {
         string name;
         bool isRegistered;
@@ -17,13 +23,19 @@ contract FlightSuretyData {
         bool exists;
     }
 
-    address private contractOwner;      // Account used to deploy contract
-    bool private operational = true;    // Blocks all state changes throughout the contract if false
-
-    mapping(address => uint256) private authorizedContracts;
     mapping(address => Airline) airlines;      // Mapping for storing airlines
 
+    // passengers info
+    struct Passenger {
+        address wallet;
+        mapping(bytes32 => uint256) boughtFlight;
+        uint256 credit;
+    }
+    mapping(address => Passenger) private passengers;
+    address[] public passengerAddresses;
+
     uint256 public constant MINIMUM_FUNDS = 10 ether;
+    uint256 public constant INSURANCE_PRICE_LIMIT = 1 ether;
 
     //multiparty variables
     uint8 private constant MULTIPARTY_MIN_AIRLINES = 4;
@@ -43,6 +55,7 @@ contract FlightSuretyData {
         contractOwner = msg.sender;
         airlinesCount = 0;
         authorizedContracts[msg.sender] = 1;
+        passengerAddresses = new address[](0);
 
         // First airline is registered when contract is deployed.
         airlines[msg.sender] = Airline({
@@ -102,7 +115,6 @@ contract FlightSuretyData {
         return operational;
     }
 
-
     /**
     * @dev Sets contract operations on/off
     *
@@ -128,6 +140,23 @@ contract FlightSuretyData {
     function isAirlineRegistered(address airline) external view requireIsOperational returns(bool)
     {
         return airlines[airline].isRegistered;
+    }
+
+    function passengerAlreadyExists(address passenger) internal view returns (bool found)
+    {
+        found = false;
+        for (uint256 i = 0; i < passengerAddresses.length; i++) {
+            if (passengerAddresses[i] == passenger) {
+                found = true;
+                break;
+            }
+        }
+        return found;
+    }
+
+    function isPassengerInsured(bytes32 flightKey, address passenger) public view returns(bool)
+    {
+        return passengers[passenger].boughtFlight[flightKey] > 0;
     }
 
     /********************************************************************************************/
@@ -183,9 +212,26 @@ contract FlightSuretyData {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy(address airline, string flight, uint256 timestamp) external payable requireIsOperational
+    function buy(bytes32 flightKey, address passenger) external payable requireIsOperational requireIsCallerAuthorized
     {
-//        flightKey = getFlightKey(airline, flight, timestamp);
+        require(msg.value > 0, "Flight insurance price needs to be > 0");
+        require(!isPassengerInsured(flightKey, passenger), "Passenger can't buy insurance for the same flight twice");
+
+        if(passengerAlreadyExists(passenger)){
+            passengers[passenger].boughtFlight[flightKey] = msg.value;
+        } else {
+            passengerAddresses.push(passenger);
+
+            passengers[passenger] = Passenger({
+                wallet: passenger,
+                credit: 0
+            });
+            passengers[passenger].boughtFlight[flightKey] = msg.value;
+        }
+
+        if (msg.value > INSURANCE_PRICE_LIMIT) {
+                                    passenger.transfer(msg.value.sub(INSURANCE_PRICE_LIMIT));
+        }
     }
 
     /**
