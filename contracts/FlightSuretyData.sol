@@ -134,7 +134,7 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-    function isActive (address airline) public view returns(bool) {
+    function hasEnoughFunds (address airline) public view returns(bool) {
         return(airlines[airline].funded >= MINIMUM_FUNDS);
     }
 
@@ -147,7 +147,6 @@ contract FlightSuretyData {
     {
         require(airlineAddress != address(0), "Airline address must be a valid address.");
         require(!airlines[airlineAddress].isRegistered, "Airline is already registered.");
-        require(airlines[msg.sender].funded > 0, "Sender needs to have funds.");
 
         if (!airlines[airlineAddress].exists) {
             airlines[airlineAddress] = Airline({

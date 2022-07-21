@@ -7,7 +7,7 @@ contract('Flight Surety Tests', async (accounts) => {
   let config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
-    await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+    await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address, { from: config.owner });
   });
 
   /****************************************************************************************/
@@ -77,11 +77,9 @@ contract('Flight Surety Tests', async (accounts) => {
     // ACT
     try {
       await config.flightSuretyData.fund({from: config.owner, value: funds});
-      await config.flightSuretyData.registerAirline('Udacity Airline', config.firstAirline, { from: config.owner });
+      await config.flightSuretyApp.registerAirline('Udacity Airline', config.firstAirline, { from: config.owner });
     }
-    catch(e) {
-      // console.log(e);
-    }
+    catch(e) { console.log(e); }
     let airlinesCount = await config.flightSuretyData.airlinesCount.call();
     let result = await config.flightSuretyData.isAirline.call(config.firstAirline);
 
@@ -97,7 +95,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     // ACT
     try {
-      await config.flightSuretyData.registerAirline('Udacity Airline 2', newAirline, {from: config.firstAirline});
+      await config.flightSuretyApp.registerAirline('Udacity Airline 2', newAirline, {from: config.firstAirline});
     }
     catch(e) {}
     let result = await config.flightSuretyData.isAirline.call(newAirline);
@@ -108,16 +106,16 @@ contract('Flight Surety Tests', async (accounts) => {
 
   it('(airline) register other airline using consensus', async () => {
     try {
-      await config.flightSuretyData.registerAirline('Udacity Airline 3', accounts[2], {from: config.owner});
-      await config.flightSuretyData.registerAirline('Udacity Airline 4', accounts[3], {from: config.owner});
-      await config.flightSuretyData.registerAirline('Udacity Airline 5', accounts[4], {from: config.owner});
+      await config.flightSuretyApp.registerAirline('Udacity Airline 3', accounts[2], {from: config.owner});
+      await config.flightSuretyApp.registerAirline('Udacity Airline 4', accounts[3], {from: config.owner});
+      await config.flightSuretyApp.registerAirline('Udacity Airline 5', accounts[4], {from: config.owner});
     }
     catch(e) { console.log(e); }
 
     let result = await config.flightSuretyData.isAirlineRegistered.call(accounts[4]);
     let airlinesCount = await config.flightSuretyData.airlinesCount.call();
     assert.equal(result, false, 'Airline should wait to get votes');
-    assert.equal(airlinesCount, 4, "Airlines count should be 4 - one waiting for votes");
+    assert.equal(airlinesCount, 4, `Airlines count should be 4 - one waiting for votes: expected ${4} got ${airlinesCount}`);
 
     await config.flightSuretyData.vote(accounts[4]);
     result = await config.flightSuretyData.isAirlineRegistered.call(accounts[4]);

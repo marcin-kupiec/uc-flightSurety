@@ -66,6 +66,12 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireHasEnoughFunds()
+    {
+        require(flightSuretyData.hasEnoughFunds(msg.sender), "Sender needs to have funds");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -98,11 +104,10 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline(string name, address airlineAddress) external requireIsOperational
+    function registerAirline(string name, address airlineAddress) external requireIsOperational requireHasEnoughFunds
     {
         flightSuretyData.registerAirline(name, airlineAddress);
     }
-
 
    /**
     * @dev Register a future flight for insuring.
