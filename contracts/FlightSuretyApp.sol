@@ -19,7 +19,7 @@ contract FlightSuretyApp {
 
     FlightSuretyData flightSuretyData;
 
-    // Flight status codees
+    // Flight status codes
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
     uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
@@ -30,17 +30,9 @@ contract FlightSuretyApp {
     address private contractOwner;          // Account used to deploy contract
 
     uint private constant premiumMultiplier = 2;
+    uint8 private constant MULTIPARTY_MIN_AIRLINES = 4;
+    uint8 private constant CONSENSUS_MAJORITY = 2;
 
-    struct Flight {
-        bool isRegistered;
-        string flightCode;
-        string destination;
-        uint8 statusCode;
-        uint256 updatedTimestamp;        
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
- 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
@@ -69,9 +61,15 @@ contract FlightSuretyApp {
         _;
     }
 
-    modifier requireHasEnoughFunds()
+    modifier requireAirlineFunded()
     {
-        require(flightSuretyData.hasEnoughFunds(msg.sender), "Sender needs to have funds");
+        require(flightSuretyData.isAirlineFunded(msg.sender), "Airline needs to have funds");
+        _;
+    }
+
+    modifier requireAirlineRegistered()
+    {
+        require(flightSuretyData.isAirlineRegistered(msg.sender), "Airline needs to have funds");
         _;
     }
 
@@ -98,6 +96,12 @@ contract FlightSuretyApp {
         return flightSuretyData.isOperational();
     }
 
+    function isAirlineRegistered(address airline) public view returns(bool)
+    {
+        require(airline != address(0), "airline must be a valid address.");
+        return flightSuretyData.isAirlineRegistered(airline);
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -106,35 +110,43 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline(string name, address airlineAddress) external requireIsOperational requireHasEnoughFunds
+    function registerAirline(string name, address newAirlineAddress) external
+    requireIsOperational
+    requireAirlineFunded
+    requireAirlineRegistered
     {
-        flightSuretyData.registerAirline(name, airlineAddress);
+        require(!isAirlineRegistered(newAirlineAddress), "Airline is already registered.");
+
+        if (flightSuretyData.airlinesCount() < MULTIPARTY_MIN_AIRLINES) {
+            flightSuretyData.registerAirline(newAirlineAddress, name, true, 0);
+            return;
+        }
+
+        if (!flightSuretyData.airlineExists(newAirlineAddress)) {
+            flightSuretyData.registerAirline(newAirlineAddress, name, false, 0);
+        }
+
+        uint threshold = flightSuretyData.airlinesCount().div(CONSENSUS_MAJORITY);
+        flightSuretyData.voteForAirline(newAirlineAddress, threshold);
     }
 
    /**
     * @dev Register a future flight for insuring.
     *
     */  
-    function registerFlight(string code, uint256 timestamp, string destination) external requireIsOperational
+    function registerFlight(string code, uint256 timestamp, string destination) external
+    requireAirlineFunded
+    requireAirlineRegistered
     {
         bytes32 key = getFlightKey(msg.sender, code, timestamp);
-        require(!flights[key].isRegistered, "Flight is already registered.");
-        require(flightSuretyData.isAirlineRegistered(msg.sender), "Airline must be registered");
-
-        flights[key] = Flight({
-            isRegistered: true,
-            destination: destination,
-            flightCode: code,
-            statusCode: STATUS_CODE_UNKNOWN,
-            updatedTimestamp: timestamp,
-            airline: msg.sender
-        });
+        flightSuretyData.registerFlight(key, code, destination, timestamp);
     }
 
-    function IsFlightRegistered(string code, uint256 timestamp, address airline) external view requireIsOperational returns(bool)
+    function IsFlightRegistered(string code, uint256 timestamp, address airline) external view
+    returns(bool)
     {
         bytes32 key = getFlightKey(airline, code, timestamp);
-        return flights[key].isRegistered;
+        return flightSuretyData.isFlightRegistered(key);
     }
 
    /**
@@ -165,11 +177,9 @@ contract FlightSuretyApp {
         emit OracleRequest(index, airline, flight, timestamp);
     }
 
-    function InsureFlight(address airline, string memory code, uint256 timestamp) public payable requireIsOperational
+    function InsureFlight(address airline, string memory code, uint256 timestamp) public payable
     {
         bytes32 flightKey = getFlightKey(airline, code, timestamp);
-        require(flights[flightKey].isRegistered, "Flight does not exist, or is not registered");
-
         flightSuretyData.buy.value(msg.value)(flightKey, msg.sender);
     }
 

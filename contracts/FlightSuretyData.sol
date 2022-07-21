@@ -25,6 +25,17 @@ contract FlightSuretyData {
 
     mapping(address => Airline) airlines;      // Mapping for storing airlines
 
+    // flights info
+    struct Flight {
+        bool isRegistered;
+        string flightCode;
+        string destination;
+        uint256 timestamp;
+        address airline;
+    }
+
+    mapping(bytes32 => Flight) private flights;
+
     // passengers info
     struct Passenger {
         address wallet;
@@ -39,8 +50,6 @@ contract FlightSuretyData {
     uint256 public constant MINIMUM_FUNDS = 10 ether;
     uint256 public constant INSURANCE_PRICE_LIMIT = 1 ether;
 
-    //multiparty variables
-    uint8 private constant MULTIPARTY_MIN_AIRLINES = 4;
     uint256 public airlinesCount;
 
     /********************************************************************************************/
@@ -134,12 +143,16 @@ contract FlightSuretyData {
         authorizedContracts[callerAddress] = 1;
     }
 
-    function deauthorizeCaller(address callerAddress) external requireIsOperational requireContractOwner
+    function deauthorizeCaller(address callerAddress) external
+    requireIsOperational
+    requireContractOwner
     {
         delete authorizedContracts[callerAddress];
     }
 
-    function isAirlineRegistered(address airline) external view requireIsOperational returns(bool)
+    function isAirlineRegistered(address airline) external view
+    requireIsOperational
+    returns(bool)
     {
         return airlines[airline].isRegistered;
     }
@@ -165,7 +178,9 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-    function hasEnoughFunds (address airline) public view returns(bool) {
+    function isAirlineFunded (address airline) public view
+    requireIsOperational
+    returns(bool) {
         return(airlines[airline].funded >= MINIMUM_FUNDS);
     }
 
@@ -173,53 +188,80 @@ contract FlightSuretyData {
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
-    */   
-    function registerAirline(string name, address airlineAddress) external requireIsOperational requireIsCallerAuthorized
+    */
+    function registerAirline(address newAirlineAddress, string name, bool registered, uint funded) external
+    requireIsOperational
+    requireIsCallerAuthorized
     {
-        require(airlineAddress != address(0), "Airline address must be a valid address.");
-        require(!airlines[airlineAddress].isRegistered, "Airline is already registered.");
+        require(newAirlineAddress != address(0), "Airline address must be a valid address.");
+        require(!airlines[newAirlineAddress].exists, "Airline already exists.");
 
-        if (!airlines[airlineAddress].exists) {
-            airlines[airlineAddress] = Airline({
-                name: name,
-                isRegistered: false,
-                funded: 0,
-                votes: 0,
-                exists: true
-            });
-        }
+        airlines[newAirlineAddress] = Airline({
+            name: name,
+            isRegistered: registered,
+            funded: funded,
+            votes: 0,
+            exists: true
+        });
 
-        if(airlinesCount < MULTIPARTY_MIN_AIRLINES) {
-            airlines[airlineAddress].isRegistered = true;
-            airlinesCount++;
-        } else {
-            vote(airlineAddress);
-        }
-    }
-
-    function vote (address voted) public requireIsOperational {
-        airlines[voted].votes++;
-
-        if (airlines[voted].votes >= airlinesCount.div(2)) {
-            airlines[voted].isRegistered = true;
+        if(registered){
             airlinesCount++;
         }
     }
 
-    function isAirline (address airline) external view returns (bool) {
+    function voteForAirline (address newAirline, uint threshold) public
+    requireIsOperational
+    {
+        airlines[newAirline].votes++;
+
+        if (airlines[newAirline].votes >= threshold) {
+            airlines[newAirline].isRegistered = true;
+            airlinesCount++;
+        }
+    }
+
+    function airlineExists (address airline) external view returns (bool) {
         return airlines[airline].exists;
+    }
+
+    function registerFlight(bytes32 key, string code, string destination, uint256 timestamp) external
+    requireIsOperational
+    requireIsCallerAuthorized
+    returns(bool)
+    {
+        require(!flights[key].isRegistered, "Flight is already registered.");
+
+        flights[key] = Flight({
+            isRegistered: true,
+            destination: destination,
+            flightCode: code,
+            timestamp: timestamp,
+            airline: msg.sender
+        });
+        return true;
+    }
+
+    function isFlightRegistered(bytes32 key) public view
+    requireIsOperational
+    requireIsCallerAuthorized
+    returns(bool)
+    {
+        return flights[key].isRegistered;
     }
 
    /**
     * @dev Buy insurance for a flight
     *
     */   
-    function buy(bytes32 flightKey, address passenger) external payable requireIsOperational requireIsCallerAuthorized
+    function buy(bytes32 flightKey, address passenger) external payable
+    requireIsOperational
+    requireIsCallerAuthorized
     {
         require(msg.value > 0, "Flight insurance price needs to be > 0");
+        require(isFlightRegistered(flightKey), "Flight does not exist, or is not registered");
         require(!isPassengerInsured(flightKey, passenger), "Passenger can't buy insurance for the same flight twice");
 
-        if(passengerAlreadyExists(passenger)){
+        if(passengerAlreadyExists(passenger)) {
             passengers[passenger].boughtFlight[flightKey] = msg.value;
         } else {
             passengerAddresses.push(passenger);
@@ -232,7 +274,7 @@ contract FlightSuretyData {
         }
 
         if (msg.value > INSURANCE_PRICE_LIMIT) {
-                                    passenger.transfer(msg.value.sub(INSURANCE_PRICE_LIMIT));
+            passenger.transfer(msg.value.sub(INSURANCE_PRICE_LIMIT));
         }
     }
 

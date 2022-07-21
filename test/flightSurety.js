@@ -83,7 +83,7 @@ contract('Flight Surety Tests', async (accounts) => {
     }
     catch(e) { console.log(e); }
     let airlinesCount = await config.flightSuretyData.airlinesCount.call();
-    let result = await config.flightSuretyData.isAirline.call(config.firstAirline);
+    let result = await config.flightSuretyData.airlineExists.call(config.firstAirline);
 
     // ASSERT
     assert.equal(airlinesCount, 2, `Airlines count should be 2.`);
@@ -100,7 +100,7 @@ contract('Flight Surety Tests', async (accounts) => {
       await config.flightSuretyApp.registerAirline('Udacity Airline 2', newAirline, {from: config.firstAirline});
     }
     catch(e) {}
-    let result = await config.flightSuretyData.isAirline.call(newAirline);
+    let result = await config.flightSuretyData.airlineExists.call(newAirline);
 
     // ASSERT
     assert.equal(result, false, 'Airline should not be able to register another airline if it has not provided funding');
@@ -119,7 +119,7 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(result, false, 'Airline should wait to get votes');
     assert.equal(airlinesCount, 4, `Airlines count should be 4 - one waiting for votes: expected ${4} got ${airlinesCount}`);
 
-    await config.flightSuretyData.vote(accounts[4]);
+    await config.flightSuretyData.voteForAirline(accounts[4], 2);
     result = await config.flightSuretyData.isAirlineRegistered.call(accounts[4]);
     airlinesCount = await config.flightSuretyData.airlinesCount.call();
     assert.equal(result, true, 'Airline should be registered');
@@ -128,6 +128,9 @@ contract('Flight Surety Tests', async (accounts) => {
 
   it('(airline) can register a flight using registerFlight()', async () => {
     flightTimestamp = Math.floor(Date.now() / 1000);
+
+    const funds = await config.flightSuretyData.MINIMUM_FUNDS.call();
+    await config.flightSuretyData.fund({from: accounts[2], value: funds});
 
     const flightCode = 'CODE1';
     try {
