@@ -33,6 +33,8 @@ contract FlightSuretyData {
     }
     mapping(address => Passenger) private passengers;
     address[] public passengerAddresses;
+    // store a mapping of passenger addresses and their credit balances
+    mapping(address => uint256) private creditBalances;
 
     uint256 public constant MINIMUM_FUNDS = 10 ether;
     uint256 public constant INSURANCE_PRICE_LIMIT = 1 ether;
@@ -237,13 +239,15 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsurees
-                                (
-                                )
-                                external
-                                pure
-    {
-    }
+//    function creditInsurees(bytes32 flightKey, uint multiplier, address payee) external
+//    requireIsOperational
+//    requireIsCallerAuthorized
+//    {
+//        require(!isPassengerInsured(flightKey, payee),"Passenger is not insured for this flight");
+//        uint256 credit = multiplier.mul(flights[flightKey].premiums[payee]);
+//        flights[flightKey].premiums[payee] = 0;
+//        creditBalances[payee].add(credit);
+//    }
     
 
     /**

@@ -29,6 +29,8 @@ contract FlightSuretyApp {
 
     address private contractOwner;          // Account used to deploy contract
 
+    uint private constant premiumMultiplier = 2;
+
     struct Flight {
         bool isRegistered;
         string flightCode;
@@ -139,36 +141,26 @@ contract FlightSuretyApp {
     * @dev Called after oracle has updated flight status
     *
     */  
-    function processFlightStatus
-                                (
-                                    address airline,
-                                    string memory flight,
-                                    uint256 timestamp,
-                                    uint8 statusCode
-                                )
-                                internal
-                                pure
+    function processFlightStatus(address airline, string memory code, uint256 timestamp, uint8 statusCode) internal
+    requireIsOperational
     {
+        if(statusCode == STATUS_CODE_LATE_AIRLINE) {
+            bytes32 key = getFlightKey(airline, code, timestamp);
+            // credit the account of each of the recipients
+//            flightSuretyData.creditInsurees(key, premiumMultiplier, msg.sender);
+        }
     }
 
 
     // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus
-                        (
-                            address airline,
-                            string flight,
-                            uint256 timestamp                            
-                        )
-                        external
+    function fetchFlightStatus(address airline, string flight, uint256 timestamp) external
+    requireIsOperational
     {
         uint8 index = getRandomIndex(msg.sender);
 
         // Generate a unique key for storing the request
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
-        oracleResponses[key] = ResponseInfo({
-                                                requester: msg.sender,
-                                                isOpen: true
-                                            });
+        oracleResponses[key] = ResponseInfo({requester: msg.sender, isOpen: true});
 
         emit OracleRequest(index, airline, flight, timestamp);
     }
