@@ -1,3 +1,4 @@
+import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
 import Config from './config.json';
 import Web3 from 'web3';
@@ -7,7 +8,10 @@ export default class Contract {
 
         let config = Config[network];
         this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+        this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
+        this.appAddress = config.appAddress;
+
         this.initialize(callback);
         this.owner = null;
         this.availableAccounts = [];
@@ -40,6 +44,7 @@ export default class Contract {
             this.passengers['Anna Klawa'] = accts[11];
             this.passengers['Mateusz Borsuk'] = accts[12];
 
+            this.flightsRegistered = [];
             this.flights = [
                 'LAI-ABE',
                 'DHA-LCY',
@@ -58,6 +63,13 @@ export default class Contract {
                 'HKG-BER',
             ];
 
+            this.authorizeAppToData((error) =>{
+              if (error) {
+                console.log("Could not authorize the App contract");
+                console.log(error);
+              }
+            });
+
             callback();
         });
     }
@@ -66,14 +78,21 @@ export default class Contract {
        let self = this;
        self.flightSuretyApp.methods
             .isOperational()
-            .call({ from: self.owner}, callback);
+            .call({ from: self.activeAccount}, callback);
+    }
+
+    authorizeAppToData(callback) {
+      let self = this;
+      self.flightSuretyData.methods
+        .authorizeCaller(self.appAddress)
+        .send({ from: self.owner}, callback);
     }
 
     toggleOperatingStatus(newStatus, callback){
         let self = this;
         self.flightSuretyApp.methods
           .setOperatingStatus(newStatus)
-          .send({ from: self.owner}, callback);
+          .send({ from: self.activeAccount }, callback);
     }
 
     fetchFlightStatus(flight, callback) {
@@ -90,11 +109,21 @@ export default class Contract {
             });
     }
 
-    registerAirline(airline, callback){
+    registerAirline(name, address, callback){
+        let self = this;
+        console.log(name, address, self.activeAccount)
+        self.flightSuretyApp.methods
+          .registerAirline(name, address)
+          .send({ from: self.activeAccount}, (error, result) => {
+              callback(error, result);
+          });
+    }
+
+    isAirlineRegistered(airline, callback){
         let self = this;
         self.flightSuretyApp.methods
-          .registerAirline(airline)
-          .send({ from: self.activeAccount}, (error, result) => {
+          .isAirlineRegistered(airline)
+          .call({ from: self.owner}, (error, result) => {
               callback(error, result);
           });
     }
@@ -108,21 +137,28 @@ export default class Contract {
           });
     }
 
-    registerFlight(flightid, callback){
-        console.log(flightid);
+    isAirlineFunded(callback){
+        let self = this;
+        self.flightSuretyApp.methods
+          .isAirlineFunded(self.activeAccount)
+          .call({ from: self.owner}, (error, result) => {
+              callback(error, result);
+          });
+    }
+
+    registerFlight(flightCode, callback){
         let self = this;
         let timestamp = Math.floor(Date.now() / 1000);
-        let airline = self.activeAccount;
+        let airline = this.activeAccount;
         self.flightSuretyApp.methods
-          .registerFlight(flightid, timestamp)
+          .registerFlight(flightCode, timestamp)
           .send({ from: self.activeAccount}, (error, result) => {
-              console.log(error);
-              if(!error){
-                  result = `success ${flightid} ${airline} ${timestamp}`;
-                  console.log(result);
-                  this.flightsAvailable.push([flightid,airline,timestamp]);
+              if (error) {
+                console.log('registerFlight error: ' + error);
               }
-              callback(error, result);
+
+              this.flightsRegistered.push([flightCode, airline, timestamp]);
+              callback(error, `registerFlight ${flightCode} ${airline} ${timestamp}`);
           });
     }
 
