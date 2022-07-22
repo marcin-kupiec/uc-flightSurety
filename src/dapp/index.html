@@ -27,46 +27,93 @@
             <tr>
                 <td><label class="form">Operational:</label></td>
                 <td><label class="form" id="operational-status">Unknown</label></td>
-                <td><div><button class="btn btn-primary" id="btn-operational-toggle">Toggle Operational Status</button></div></td>
-                <td><div><button class="btn btn-primary" id="btn-operational-status" hidden=true>Refresh Operational Status</button></div></td>
+                <td>
+                    <div>
+                        <button class="btn btn-primary" id="btn-operational-toggle">Toggle Operational Status</button>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <button class="btn btn-primary" id="btn-operational-status" hidden=true>Refresh Operational
+                            Status
+                        </button>
+                    </div>
+                </td>
             </tr>
             <tr>
-                <td><div><label class="form">Select:</label></div></td>
-                <td><div><select id="available-accounts" title="select an active account for operations"></select></div></td>
+                <td>
+                    <div><label class="form">Select:</label></div>
+                </td>
+                <td>
+                    <div><select id="available-accounts" title="select an active account for operations"></select></div>
+                </td>
             </tr>
             <tr>
-                <td><div><label class="form">Account:</label></div></td>
-                <td><div><label class="form" id=acc-address>unknown</label></div></td>
+                <td>
+                    <div><label class="form">Account:</label></div>
+                </td>
+                <td>
+                    <div><label class="form" id=acc-address>unknown</label></div>
+                </td>
             </tr>
             <tr>
-                <td><div><label class="form">Registered:</label></div></td>
-                <td><div><label class="form" id=acc-registered>unknown</label></div></td>
+                <td>
+                    <div><label class="form">Registered:</label></div>
+                </td>
+                <td>
+                    <div><label class="form" id=acc-registered>unknown</label></div>
+                </td>
             </tr>
             <tr>
-                <td><div><label class="form">Funded:</label></div></td>
-                <td><div><label class="form" id=acc-funded>unknown</label></div></td>
+                <td>
+                    <div><label class="form">Funded:</label></div>
+                </td>
+                <td>
+                    <div><label class="form" id=acc-funded>unknown</label></div>
+                </td>
             </tr>
             <tr>
-                <td><div><label class="form">Credit:</label></div></td>
-                <td><div><label class="form" id=acc-credit>unknown</label></div></td>
+                <td>
+                    <div><label class="form">Credit:</label></div>
+                </td>
+                <td>
+                    <div><label class="form" id=acc-credit>unknown</label></div>
+                </td>
             </tr>
             <tr>
-                <td><div><label class="form">Balance:</label></div></td>
-                <td><div><label class="form" id=acc-balance>unknown</label></div></td>
+                <td>
+                    <div><label class="form">Balance:</label></div>
+                </td>
+                <td>
+                    <div><label class="form" id=acc-balance>unknown</label></div>
+                </td>
             </tr>
             <tr>
-                <td><div><label class="form">Contract Owner:</label></div></td>
-                <td><div><label class="form" id=acc-owner>unknown</label></div></td>
+                <td>
+                    <div><label class="form">Contract Owner:</label></div>
+                </td>
+                <td>
+                    <div><label class="form" id=acc-owner>unknown</label></div>
+                </td>
             </tr>
             <tr>
-                <td><div><button class="btn btn-primary" id="btn-refresh-status">Refresh Status</button></div></td>
+                <td>
+                    <div>
+                        <button class="btn btn-primary" id="btn-refresh-status">Refresh Status</button>
+                    </div>
+                </td>
             </tr>
             <tr>
                 <td><label class="form" hidden="true">Oracles:</label></td>
                 <td><input type="text" id="oracle-count" value="25" hidden="true"></td>
             </tr>
             <tr>
-                <td><div><button class="btn btn-primary" id="btn-register-oracles" hidden="true">Register Oracles</button></div></td>
+                <td>
+                    <div>
+                        <button class="btn btn-primary" id="btn-register-oracles" hidden="true">Register Oracles
+                        </button>
+                    </div>
+                </td>
             </tr>
         </table>
     </div>
@@ -89,12 +136,28 @@
     </div>
     <table>
         <tr>
-            <td><div><select id="airline" title="select an avilable airline"></select></div></td>
-            <td><div><button class="btn btn-primary" id="btn-airline-register" title="call originates from the currently active account">Register an Airline</button></div></td>
+            <td>
+                <div><select id="airline" title="select an avilable airline"></select></div>
+            </td>
+            <td>
+                <div>
+                    <button class="btn btn-primary" id="btn-airline-register"
+                            title="call originates from the currently active account">Register an Airline
+                    </button>
+                </div>
+            </td>
         </tr>
         <tr>
-            <td><div><input type="text" id="fund-amount" title="amount to fund airline in ether"></input></div></td>
-            <td><div><button class="btn btn-primary" id="btn-airline-fund" title="funds the airline associated with the active account">Fund Your Airline</button></div></td>
+            <td>
+                <div><input type="text" id="fund-amount" title="amount to fund airline in ether"></input></div>
+            </td>
+            <td>
+                <div>
+                    <button class="btn btn-primary" id="btn-airline-fund"
+                            title="funds the airline associated with the active account">Fund Your Airline
+                    </button>
+                </div>
+            </td>
         </tr>
     </table>
     <div id="airline-messages" class="top-20">
@@ -122,7 +185,11 @@
                 <td><select id="flight-select" title="select an avilable flight"></select></div></td>
             </tr>
             <tr>
-                <td><div><button class="btn btn-primary" id="btn-flights-register">Register</button></div></td>
+                <td>
+                    <div>
+                        <button class="btn btn-primary" id="btn-flights-register">Register</button>
+                    </div>
+                </td>
             </tr>
         </table>
         <div id="flight-messages" class="top-20">
@@ -153,11 +220,23 @@
             <td><input type="text" id="insurance-amount"></td>
         </tr>
         <tr>
-            <td><div><button class="btn btn-primary" id="btn-purchase-insurance">Purchase Insurance</button></div></td>
-            <td><div><button class="btn btn-primary" id="btn-withdraw-funds">Withdraw Funds</button></div></td>
+            <td>
+                <div>
+                    <button class="btn btn-primary" id="btn-purchase-insurance">Purchase Insurance</button>
+                </div>
+            </td>
+            <td>
+                <div>
+                    <button class="btn btn-primary" id="btn-withdraw-funds">Withdraw Funds</button>
+                </div>
+            </td>
         </tr>
         <tr>
-            <td><div><button class="btn btn-primary" id="submit-oracle">Fetch Flight Status</button></div></td>
+            <td>
+                <div>
+                    <button class="btn btn-primary" id="submit-oracle">Fetch Flight Status</button>
+                </div>
+            </td>
         </tr>
     </table>
     <div id="insurance-messages" class="top-20">
