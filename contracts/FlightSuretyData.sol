@@ -18,12 +18,13 @@ contract FlightSuretyData {
     struct Airline {
         string name;
         bool isRegistered;
-        uint256 funded;
-        uint256 votes;
+        uint funded;
+        uint votes;
         bool exists;
     }
 
-    mapping(address => Airline) airlines;      // Mapping for storing airlines
+    mapping(address => Airline) private airlines;      // Mapping for storing airlines
+    uint256 public airlinesCount;
 
     // flights info
     struct Flight {
@@ -47,10 +48,8 @@ contract FlightSuretyData {
     // store a mapping of passenger addresses and their credit balances
     mapping(address => uint256) private creditBalances;
 
-    uint256 public constant MINIMUM_FUNDS = 10 ether;
+    uint256 public constant MINIMUM_FUNDS = 1 ether;
     uint256 public constant INSURANCE_PRICE_LIMIT = 1 ether;
-
-    uint256 public airlinesCount;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -154,7 +153,7 @@ contract FlightSuretyData {
         delete authorizedContracts[callerAddress];
     }
 
-    function isAirlineRegistered(address airline) external
+    function isAirlineRegistered(address airline) view external
     requireIsOperational
     returns (bool)
     {
